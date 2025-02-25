@@ -1,0 +1,44 @@
+name: Build Loop
+
+on:
+  workflow_dispatch:
+    # يسمح بتشغيل الـWorkflow يدويًا من تبويب Actions
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      
+      - name: Set up Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      
+      - name: Install dependencies
+        run: |
+          gem install bundler:2.2.33
+          bundle install
+      
+      - name: Build Loop
+        run: |
+          xcodebuild -workspace Loop.xcworkspace \
+                     -scheme Loop \
+                     -configuration Release \
+                     -archivePath build/Loop.xcarchive \
+                     archive
+          xcodebuild -exportArchive \
+                     -archivePath build/Loop.xcarchive \
+                     -exportOptionsPlist exportOptions.plist \
+                     -exportPath build
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+      
+      - name: Upload IPA
+        uses: actions/upload-artifact@v2
+        with:
+          name: Loop.ipa
+          path: build/*.ipa
